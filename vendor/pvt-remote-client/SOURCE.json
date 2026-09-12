@@ -1,0 +1,11 @@
+{
+  "protocol": 1,
+  "source": "procedural_visualizer_tool/remote/client",
+  "sha256": {
+    "App.jsx": "84ab18ed4caa186c855a42b16cda42c9b30fb7f8484c33df2bd615b56c05da5f",
+    "protocol.mjs": "c96fbb2d7dda2dcc62667871a9cb65a55d0375394b3b300b4739cc030061b66b",
+    "storage.mjs": "7ae22d50ef9c94eb56eeb6606cec7118d5bdddf3d5141717f7f9d230ee678344",
+    "style.css": "847867fba1f240daa8cb28bb9d7e6f70bbea130219b13ccd208a5b003fc9e720",
+    "transport.mjs": "ab93397547e76ece28e1b3133bf7ce8b6bfe2239d1bdf98e7d323cc93cb80c36"
+  }
+}
