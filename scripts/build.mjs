@@ -2,6 +2,7 @@ import {build as vite} from 'vite';
 import {build as bundle} from 'esbuild';
 import {mkdir, writeFile, readFile} from 'node:fs/promises';
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
+const icons = Object.fromEntries([16, 32, 48, 64, 128, 256, 512].map(size => [size, `icons/icon-${size}.png`]));
 const role = pkg.name.endsWith('rd') ? 'Display' : 'Control';
 for (const browser of ['chrome', 'firefox', 'safari']) {
   const outDir = `dist/${browser}`;
@@ -10,7 +11,7 @@ for (const browser of ['chrome', 'firefox', 'safari']) {
   const manifest = {
     manifest_version: 3, name: `PVT Remote ${role}`, version: pkg.version,
     description: `Paired remote ${role.toLowerCase()} for Procedural Visualizer Tool.`,
-    permissions: ['storage'], action: {default_title: `Open PVT Remote ${role}`},
+    icons, permissions: ['storage'], action: {default_title: `Open PVT Remote ${role}`, default_icon: icons},
     background: browser === 'chrome' ? {service_worker: 'background.js'} : {scripts: ['background.js']},
     content_security_policy: {extension_pages: "script-src 'self'; object-src 'none'; connect-src 'self' ws: wss:; media-src 'self' blob:;"},
   };
