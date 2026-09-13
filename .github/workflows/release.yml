@@ -1,0 +1,63 @@
+name: Release extensions
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      submit_to_store:
+        description: Upload and submit this version for Chrome Web Store review
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: extension-release
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Check tag version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: node --input-type=module -e 'import fs from "node:fs"; if ("v" + JSON.parse(fs.readFileSync("package.json")).version !== process.env.GITHUB_REF_NAME) process.exit(1)'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: python3 scripts/package.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-packages
+          path: release/
+      - name: Publish GitHub release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/* --verify-tag --title "$GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md
+  chrome-store:
+    needs: package
+    if: vars.CWS_PUBLISHER_ID != '' && (github.event_name == 'push' || inputs.submit_to_store)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension-packages
+          path: release/
+      - name: Verify package checksums
+        working-directory: release
+        run: sha256sum -c SHA256SUMS.txt
+      - name: Submit to Chrome Web Store
+        env:
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          CWS_SERVICE_ACCOUNT_JSON: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
+        run: node scripts/chrome-store.mjs release/*-chrome.zip

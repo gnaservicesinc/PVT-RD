@@ -4,11 +4,12 @@
   "sha256": {
     "App.jsx": "e60f26be9d7e072b6816b6cbbbd17d7f5625701489ccb7b30948d7aab76b0e0a",
     "ControlBrowser.jsx": "27af9698d1cfab35f3c8a79fbce5b7b945f55cba2d0efaecef8d5ebac7bf52ff",
-    "Settings.jsx": "690b3768ea0a6c3712e9daaa32b0bb74c72f4ce3df93ca6d2410d4af90ab1439",
+    "Settings.jsx": "dfb37936f5cf0e7a3c9a21a1804fc09a58436734db83dc63bc53e62ed2f9c9dd",
     "navigation.mjs": "bca137633a6e7f8bb3a215f0849afb7c8252d87ca45a6c4d7970f12df7f23646",
     "protocol.mjs": "c96fbb2d7dda2dcc62667871a9cb65a55d0375394b3b300b4739cc030061b66b",
     "storage.mjs": "c0accf3c29ee63da2aa319c9980676aae56232b57df8881f0f4d987377926665",
-    "style.css": "1a48a968f5cf28743abab79fab08c3a61b397896c4129eb69bc17254c1552802",
+    "store-links.mjs": "fe03a6be6694ce8e3048e974c736ea88de6948e0ad7900cbab0b06e72e95cf95",
+    "style.css": "16efe42bf5667b09a9a49dea48faf4109d5822a7ea32d73c20ecea0ced1c9b62",
     "transport.mjs": "17e63e0e96a962dfee91fb1da82bf9075d59bd4b7d2f4e85efe36731781c6f0f"
   }
 }

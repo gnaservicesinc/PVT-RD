@@ -4,6 +4,9 @@ A standalone Manifest V3 browser extension for Procedural Visualizer Tool.
 The toolbar action opens/focuses a pinned extension tab that owns WebRTC.
 Keep the tab open while connected; the service worker never owns media streams.
 
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/ebehogflkicknbgeimbmhfeaagjfgfda).
+Chrome updates the installed extension after Google approves each release.
+
 ## Build and load
 
 Requires Node.js 22+ and pnpm (the exact version is pinned in package.json).
@@ -75,3 +78,24 @@ Firefox/Safari runtime certification and production NAT/TURN testing remain
 separate validation gates.
 
 License: GPL-3.0; see LICENSE.
+
+## Automated Chrome Web Store releases
+
+Enable the Chrome Web Store API in Google Cloud. Create a service account
+(with no project roles), then link its email under Account in the Chrome Web
+Store Developer Dashboard. In this GitHub repository, configure:
+
+- Actions variable `CWS_PUBLISHER_ID`: Publisher ID from Publisher → Settings.
+- Actions secret `CWS_SERVICE_ACCOUNT_JSON`: the service account JSON key.
+
+Never commit the JSON key. See Google's [service-account setup](https://developer.chrome.com/docs/webstore/service-accounts).
+
+An annotated `v<package version>` tag runs tests, builds and verifies the three
+browser ZIPs, publishes a GitHub release, and submits the Chrome package through
+Web Store API V2 when the publisher variable is configured. Google's review is
+not bypassed. Without the variable, packaging still succeeds and no store
+submission occurs. For an existing tag, run **Release extensions** manually
+with **submit_to_store** enabled after configuring credentials. Manual runs
+produce artifacts and can submit without recreating the GitHub release.
+Check the Developer Dashboard after a timed-out upload or submission before
+retrying. A successful submission is not proof that the update is live.
