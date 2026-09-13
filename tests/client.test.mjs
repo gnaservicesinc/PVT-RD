@@ -66,3 +66,15 @@ test('reinstallation restores opt-in hosts with a new private identity', async (
   await store.disableSync();
   const localOnly=await store.load(); assert.equal(localOnly.syncEnabled,false);
 });
+
+test('enabling sync restores backup hosts while preserving edited local names and pinned keys', async () => {
+  const api = storage(); const store = new ProfileStore(api, 'control');
+  const local = publicHost(await newIdentity('display'));
+  const backup = publicHost(await newIdentity('display'));
+  await store.saveHosts([local, backup], true);
+  const edited = {...local, label: 'Edited desktop'};
+  const merged = await store.mergeSyncedHosts([edited], true);
+  assert.equal(merged.length, 2); assert.equal(merged[0].label, 'Edited desktop');
+  api.storage.sync.data['pvt.host.' + local.id] = {...backup, id: local.id};
+  await assert.rejects(store.mergeSyncedHosts([edited], true), /key changed/);
+});
