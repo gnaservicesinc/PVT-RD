@@ -28,13 +28,13 @@ pnpm build
 
 PVT packages include the transport. There is no separate runtime setup.
 
-1. In **Hosts & settings**, save `.pvtremote`.
-2. Import it in PVT's **Settings → Networking & Remotes**.
-3. Save `.pvthost` from PVT and open it here, then choose **Save changes**. Connection starts automatically.
+1. In **Hosts & settings**, choose **Export Remote file (.pvtremote)**.
+2. Import it in PVT's **Settings → Remotes**.
+3. Export the **PVT host file (.pvthost)** from PVT and import it here, then choose **Save changes**. Connection starts automatically.
 
 Keep PVT running and the remote tab open. Pairings and the selected PVT survive
-restarts. Temporary interruptions reconnect automatically. Disconnect pauses
-connections until Connect is selected again.
+restarts. Temporary interruptions reconnect automatically. Saved connection pauses from older versions are removed. Multiple tabs can
+connect without displacing each other.
 
 Receives PVT’s real stage video and audio over WebRTC. Audio starts muted; select Enable audio to hear it. Full screen and host background controls are available. Multiple paired display identities can receive output simultaneously.
 
