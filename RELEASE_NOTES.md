@@ -1,11 +1,10 @@
-Version 0.2.2 repairs automatic recovery and paired-host setup.
+Version 0.2.3 restores Disconnect and Connect in Chrome and Firefox.
 
-Remote Display reconnects automatically, including after migration from legacy
-paused settings. It can share one paired profile across multiple tabs without the
-tabs disconnecting each other. Setup now clearly distinguishes exporting this
-Remote file (.pvtremote) from importing PVT's host file (.pvthost).
+Disconnect closes the selected host connection, stops its media and automatic
+retries, and keeps this tab disconnected until Connect is clicked or another
+host is selected. Reloading the tab resumes normal automatic connection.
+Pairing files remain saved. Temporary network failures still recover
+automatically; legacy persistent pause settings are still removed.
 
-The paired-host view and PVT connection details identify browser, system and
-network endpoints. GitHub publication is separate from Chrome Web Store review
-and rollout. Firefox and Safari archives remain build outputs, not signed store
-packages.
+This replaces broken 0.2.2. Store approval and rollout are separate from
+publishing these release archives.

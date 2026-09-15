@@ -2,7 +2,7 @@
   "protocol": 1,
   "source": "procedural_visualizer_tool/remote/client",
   "sha256": {
-    "App.jsx": "f5cddef48778f19f0a91f9d9350186490d16efd114e47994b93836dd6264fc78",
+    "App.jsx": "2b349387575b56c4f34e310b577a4b92a5ec2cd600a313d1a498b7e2187b6926",
     "ControlBrowser.jsx": "27af9698d1cfab35f3c8a79fbce5b7b945f55cba2d0efaecef8d5ebac7bf52ff",
     "Settings.jsx": "d5b20f5d97727fea209492cd1b5d68c0ff6751a27663c92747861937c92c9be2",
     "navigation.mjs": "bca137633a6e7f8bb3a215f0849afb7c8252d87ca45a6c4d7970f12df7f23646",

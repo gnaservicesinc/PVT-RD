@@ -33,7 +33,7 @@ PVT packages include the transport. There is no separate runtime setup.
 3. Export the **PVT host file (.pvthost)** from PVT and import it here, then choose **Save changes**. Connection starts automatically.
 
 Keep PVT running and the remote tab open. Pairings and the selected PVT survive
-restarts. Temporary interruptions reconnect automatically. Saved connection pauses from older versions are removed. Multiple tabs can
+restarts. Use Disconnect to stop the current connection and Connect to resume. This choice lasts for the current tab session; reloading reconnects automatically. Temporary interruptions reconnect automatically. Saved connection pauses from older versions are removed. Multiple tabs can
 connect without displacing each other.
 
 Receives PVT’s real stage video and audio over WebRTC. Audio starts muted; select Enable audio to hear it. Full screen and host background controls are available. Multiple paired display identities can receive output simultaneously.
