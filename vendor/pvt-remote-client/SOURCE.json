@@ -2,14 +2,14 @@
   "protocol": 1,
   "source": "procedural_visualizer_tool/remote/client",
   "sha256": {
-    "App.jsx": "2b349387575b56c4f34e310b577a4b92a5ec2cd600a313d1a498b7e2187b6926",
+    "App.jsx": "0de2ec2e3c10db11cdef065b379eaad07720118635b0b37e59e488bc5598cdd5",
     "ControlBrowser.jsx": "27af9698d1cfab35f3c8a79fbce5b7b945f55cba2d0efaecef8d5ebac7bf52ff",
     "Settings.jsx": "d5b20f5d97727fea209492cd1b5d68c0ff6751a27663c92747861937c92c9be2",
     "navigation.mjs": "bca137633a6e7f8bb3a215f0849afb7c8252d87ca45a6c4d7970f12df7f23646",
     "protocol.mjs": "4a2b88f3bf84b782a8e00188b846fca52acd320d1c21559e6da7da8d6a5057f4",
-    "storage.mjs": "4897e695fd2856f52ddc1debd168500045a5f94d395adc2a0c4516364f86addb",
+    "storage.mjs": "f7838d51dab588f5276ceab4d9215d1bbfce7503184181d5b4a3b308e575c41b",
     "store-links.mjs": "fe03a6be6694ce8e3048e974c736ea88de6948e0ad7900cbab0b06e72e95cf95",
     "style.css": "16efe42bf5667b09a9a49dea48faf4109d5822a7ea32d73c20ecea0ced1c9b62",
-    "transport.mjs": "4fcea4cd55410ecd5128589c4997f60e937d649b584a4e2880a63e523a14b275"
+    "transport.mjs": "1f7011e8495c9b0cd51a9d5495bea1812da393265007e449615f453ae59478bb"
   }
 }
