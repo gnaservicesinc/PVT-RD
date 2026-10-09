@@ -123,3 +123,5 @@ node scripts/firefox-store.mjs --dry-run
 uses AMO credentials to inspect the version without submitting anything. After
 a timeout or store error, inspect the developer dashboard before retrying; a
 successful submission does not prove that the update is live.
+
+AMO rate-limit responses honor `Retry-After` with up to four retries and fresh JWTs. Delays above ten minutes stop safely for later retry; ambiguous timeouts are never replayed automatically.

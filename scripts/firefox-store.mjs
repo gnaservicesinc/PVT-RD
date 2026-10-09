@@ -39,8 +39,20 @@ export function reviewerNotes(approvalNotes, archive, source) {
 export async function firefoxRelease({ config, name, guid, version, archive, source, notes = '', approvalNotes = '', statusOnly = false, fetcher = fetch, wait = pause }) {
   if (!config.issuer || !config.secret || !['pvt-rc', 'pvt-rd'].includes(name) || guid !== `${name}@gnaservicesinc.com` || !/^\d+\.\d+\.\d+$/.test(version || '')) fail('Invalid Firefox release configuration');
   const addon = `${origin}/addons/addon/${encodeURIComponent(guid)}`;
-  const request = (url, method = 'GET', body, type, options) => requestJson(fetcher, url,
-    { method, body, headers: { Authorization: authorization(config), ...(type ? { 'Content-Type': type } : {}) } }, options);
+  const request = async (url, method = 'GET', body, type, options) => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        // Each retry needs a fresh short-lived JWT after the server's delay.
+        return await requestJson(fetcher, url, { method, body, headers: { Authorization: authorization(config), ...(type ? { 'Content-Type': type } : {}) } }, options);
+      } catch (error) {
+        // A 429 is an explicit refusal, so replaying this request cannot create
+        // a duplicate version. Ambiguous timeouts are never replayed here.
+        if (!error.retryMs || error.retryMs > 600000 || attempt >= 4) throw error;
+        console.error(`Firefox AMO rate limit: waiting ${Math.ceil(error.retryMs / 1000) + 1} seconds before retry`);
+        await wait(error.retryMs + 1000);
+      }
+    }
+  };
   const identity = await request(`${addon}/`);
   if (identity.guid !== guid) fail('AMO returned a different add-on identity');
   let current = await request(`${addon}/versions/v${version}/`, 'GET', undefined, undefined, { allow404: true });

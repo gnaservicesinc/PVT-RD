@@ -33,6 +33,14 @@ export async function requestJson(fetcher, url, init, { allow404 = false } = {})
   let response;
   try { response = await fetcher(url, { ...init, redirect: 'error', signal: AbortSignal.timeout(120000) }); }
   catch { fail('Firefox AMO request failed or timed out; check the store dashboard before retrying'); }
+  if (response.status === 429) {
+    const header = response.headers?.get('retry-after') || '';
+    const seconds = /^\d+$/.test(header) ? Number(header) : Math.ceil((Date.parse(header) - Date.now()) / 1000);
+    const retryMs = Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 60000;
+    const error = new ReleaseError(`Firefox AMO rate limited this request; retry after ${Math.ceil(retryMs / 1000)} seconds`);
+    error.retryMs = retryMs;
+    throw error;
+  }
   if (allow404 && response.status === 404) return null;
   if (!response.ok) fail(`Firefox AMO failed (HTTP ${response.status}); check credentials, store metadata, and the dashboard`);
   try { return await response.json(); }

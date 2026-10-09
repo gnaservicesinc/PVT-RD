@@ -148,3 +148,29 @@ test('Firefox archive verification rejects wrong versions, add-on identities and
     }
   } finally { await rm(temp, { recursive: true, force: true }); }
 });
+
+test('AMO rate-limit retry honors Retry-After and generates a fresh JWT', async () => {
+  const api = fixture([{ guid }, { http: 404 }, uploaded(), current, current, current]);
+  let throttled = false;
+  const calls = [];
+  const waits = [];
+  const fetcher = async (url, init) => {
+    if (init.method === 'POST' && !throttled) {
+      throttled = true; calls.push(init);
+      return { ok: false, status: 429, headers: new Headers({ 'Retry-After': '65' }) };
+    }
+    if (throttled && init.method === 'POST' && calls.length === 1) calls.push(init);
+    return api.fetcher(url, init);
+  };
+  assert.equal((await firefoxRelease({ ...base, fetcher, wait: async ms => waits.push(ms) })).state, 'unreviewed');
+  assert.deepEqual(waits, [66000]);
+  assert.notEqual(calls[0].headers.Authorization, calls[1].headers.Authorization);
+  assert.equal(calls[0].body, calls[1].body);
+});
+test('hourly rate limits stop safely and ambiguous failures are never replayed', async () => {
+  let calls = 0;
+  await assert.rejects(firefoxRelease({ ...base, fetcher: async () => {
+    calls++; return { ok: false, status: 429, headers: new Headers({ 'Retry-After': '3600' }) };
+  } }), /3600 seconds/);
+  assert.equal(calls, 1);
+});
