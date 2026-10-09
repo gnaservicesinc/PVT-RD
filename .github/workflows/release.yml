@@ -4,48 +4,120 @@ on:
     tags: ['v*']
   workflow_dispatch:
     inputs:
+      release_tag:
+        description: Existing annotated release tag, such as v0.2.4
+        type: string
+        required: true
       submit_to_store:
-        description: Upload and submit this version for Chrome Web Store review
+        description: Submit the selected release to the Chrome Web Store
         type: boolean
         default: false
+      submit_to_firefox:
+        description: Submit the selected release to Firefox AMO with reviewer source
+        type: boolean
+        default: true
 permissions:
   contents: read
 concurrency:
   group: extension-release
   cancel-in-progress: false
+defaults:
+  run:
+    shell: bash
 jobs:
   package:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
     steps:
+      # Keep current automation separate from immutable tagged build inputs.
+      # This lets main submit older releases without changing their tags.
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Select release tag
+        id: release
+        env:
+          REQUESTED_TAG: ${{ inputs.release_tag }}
+        run: |
+          tag="${REQUESTED_TAG:-$GITHUB_REF_NAME}"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Select a versioned release tag'; exit 1; }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tag }}
+          path: release-source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify annotated tag and package identity
+        working-directory: release-source
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          [[ "$(git cat-file -t "$RELEASE_TAG")" == tag ]] || { echo 'Release tag must be annotated'; exit 1; }
+          [[ "$(git rev-parse "$RELEASE_TAG^{commit}")" == "$(git rev-parse HEAD)" ]] || exit 1
+          node --input-type=module -e 'import fs from "node:fs"; const p = JSON.parse(fs.readFileSync("package.json")); if ("v" + p.version !== process.env.RELEASE_TAG || !["pvt-rc", "pvt-rd"].includes(p.name)) process.exit(1)'
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - name: Check tag version
-        if: startsWith(github.ref, 'refs/tags/')
-        run: node --input-type=module -e 'import fs from "node:fs"; if ("v" + JSON.parse(fs.readFileSync("package.json")).version !== process.env.GITHUB_REF_NAME) process.exit(1)'
+          cache-dependency-path: release-source/pnpm-lock.yaml
+      - name: Test store automation
+        run: node --test tests/firefox_publish.test.mjs
       - run: pnpm install --frozen-lockfile
+        working-directory: release-source
       - run: pnpm check
-      - run: python3 scripts/package.py
+        working-directory: release-source
+      - name: Package new release and reviewer source
+        if: github.event_name == 'push'
+        working-directory: release-source
+        run: python3 ../scripts/package.py
+      - name: Download existing release artifacts
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir release-source/release --pattern '*-chrome.zip' --pattern '*-firefox.zip' --pattern '*-safari.zip' --pattern SHA256SUMS.txt
+      - name: Verify original release checksums
+        working-directory: release-source/release
+        run: sha256sum -c SHA256SUMS.txt
+      - name: Add deterministic reviewer source for an existing release
+        if: github.event_name == 'workflow_dispatch'
+        run: python3 scripts/package-source.py --source release-source --output release-source/release
+      - name: Verify reviewer source rebuilds released Firefox files
+        run: python3 scripts/verify-firefox-build.py release-source
+      - name: Validate Firefox identity and reviewer archive
+        env:
+          SOURCE_DIR: release-source
+          RELEASE_DIR: release-source/release
+        run: node scripts/firefox-store.mjs --dry-run
       - uses: actions/upload-artifact@v4
         with:
           name: extension-packages
-          path: release/
+          path: release-source/release/
+          if-no-files-found: error
       - name: Publish GitHub release
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" release/* --verify-tag --title "$GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: gh release create "$RELEASE_TAG" release-source/release/* --verify-tag --title "$RELEASE_TAG" --notes-file release-source/RELEASE_NOTES.md
   chrome-store:
     needs: package
     if: vars.CWS_PUBLISHER_ID != '' && (github.event_name == 'push' || inputs.submit_to_store)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.package.outputs.tag }}
+          path: release-source
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -57,7 +129,42 @@ jobs:
         working-directory: release
         run: sha256sum -c SHA256SUMS.txt
       - name: Submit to Chrome Web Store
+        working-directory: release-source
         env:
           CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
           CWS_SERVICE_ACCOUNT_JSON: ${{ secrets.CWS_SERVICE_ACCOUNT_JSON }}
-        run: node scripts/chrome-store.mjs release/*-chrome.zip
+        run: node ../scripts/chrome-store.mjs ../release/*-chrome.zip
+  firefox-store:
+    needs: package
+    if: github.event_name == 'push' || inputs.submit_to_firefox
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.package.outputs.tag }}
+          path: release-source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension-packages
+          path: release/
+      - name: Verify package checksums
+        working-directory: release
+        run: sha256sum -c SHA256SUMS.txt
+      - name: Submit to Firefox AMO
+        env:
+          SOURCE_DIR: release-source
+          RELEASE_DIR: release
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: node scripts/firefox-store.mjs --submit | tee firefox-submission.json
+      - name: Record Firefox submission result
+        run: |
+          echo 'Firefox AMO submission (review and publication are separate):' >> "$GITHUB_STEP_SUMMARY"
+          cat firefox-submission.json >> "$GITHUB_STEP_SUMMARY"

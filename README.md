@@ -9,7 +9,7 @@ Chrome updates the installed extension after Google approves each release.
 
 ## Build and load
 
-Requires Node.js 22+ and pnpm (the exact version is pinned in package.json).
+Requires Node.js 22.13+ and pnpm (the exact version is pinned in package.json).
 
 ```sh
 corepack enable
@@ -79,23 +79,47 @@ separate validation gates.
 
 License: GPL-3.0; see LICENSE.
 
-## Automated Chrome Web Store releases
+## Automated browser store releases
 
-Enable the Chrome Web Store API in Google Cloud. Create a service account
-(with no project roles), then link its email under Account in the Chrome Web
-Store Developer Dashboard. In this GitHub repository, configure:
+An annotated `v<package version>` tag runs tests, builds Chrome/Firefox/Safari,
+verifies the version and checksums, publishes a GitHub release, and submits to
+Chrome and Firefox independently. Firefox receives the original extension ZIP
+and complete reviewer source with pinned dependencies and rebuild instructions.
+The workflow checks that this source rebuilds every released Firefox file.
+The reviewer ZIP is deterministic for a selected source revision, allowing safe
+retries after an interrupted submission. Store review and publication are
+separate from a successful workflow submission. Safari signing remains manual.
 
-- Actions variable `CWS_PUBLISHER_ID`: Publisher ID from Publisher → Settings.
-- Actions secret `CWS_SERVICE_ACCOUNT_JSON`: the service account JSON key.
+Configure these in this GitHub repository's **Settings → Secrets and variables → Actions**:
 
-Never commit the JSON key. See Google's [service-account setup](https://developer.chrome.com/docs/webstore/service-accounts).
+- Variable `CWS_PUBLISHER_ID`: Publisher ID from Chrome Publisher → Settings.
+- Secret `CWS_SERVICE_ACCOUNT_JSON`: a service account key linked to your
+  Chrome Web Store publisher. See Google's [service-account setup](https://developer.chrome.com/docs/webstore/service-accounts).
+- Secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET`: API credentials for the Mozilla
+  account owning this add-on, from [AMO API credentials](https://addons.mozilla.org/developers/addon/api/key/).
 
-An annotated `v<package version>` tag runs tests, builds and verifies the three
-browser ZIPs, publishes a GitHub release, and submits the Chrome package through
-Web Store API V2 when the publisher variable is configured. Google's review is
-not bypassed. Without the variable, packaging still succeeds and no store
-submission occurs. For an existing tag, run **Release extensions** manually
-with **submit_to_store** enabled after configuring credentials. Manual runs
-produce artifacts and can submit without recreating the GitHub release.
-Check the Developer Dashboard after a timed-out upload or submission before
-retrying. A successful submission is not proof that the update is live.
+Keep credentials in Actions secrets; never commit keys or place secrets in
+Actions variables. Firefox submission fails visibly if credentials are missing.
+Chrome submission runs when its publisher variable is configured.
+
+To submit an existing GitHub release, run **Release extensions** on `main` with
+**release_tag** set to its annotated tag (for example `v0.2.4`). Leave
+**submit_to_firefox** enabled and **submit_to_store** disabled for a Firefox-only
+retry. Enable Chrome explicitly only when that version needs submission.
+Manual runs reuse the release's exact published ZIPs and checksums, and rebuild
+reviewer source from its immutable tag; they do not recreate the GitHub release
+or move its tag. A Firefox version already submitted with the same release and
+source digests is confirmed without uploading again. A mismatch, rejected
+version, or disabled version stops for dashboard inspection.
+
+For local package validation after building, run:
+
+```sh
+python3 scripts/package.py
+node scripts/firefox-store.mjs --dry-run
+```
+
+`--dry-run` validates archives without credentials or network access. `--status`
+uses AMO credentials to inspect the version without submitting anything. After
+a timeout or store error, inspect the developer dashboard before retrying; a
+successful submission does not prove that the update is live.

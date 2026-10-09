@@ -17,3 +17,7 @@ for browser in ('chrome', 'firefox', 'safari'):
         assert json.loads(zipped.read('manifest.json'))['version'] == package['version']
     checksums.append(f"{hashlib.sha256(archive.read_bytes()).hexdigest()}  {archive.name}")
 (output / 'SHA256SUMS.txt').write_text('\n'.join(checksums) + '\n')
+# Use the release automation's reviewer packager, including for older tags.
+import runpy
+reviewer = runpy.run_path(str(Path(__file__).with_name('package-source.py')))
+reviewer['create_source'](Path.cwd(), output)
